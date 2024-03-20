@@ -4,16 +4,18 @@ const usersControllers = require("../controllers/users-controllers");
 
 const router = express.Router();
 
-router.get("/", (req, res, next) => {
-  res.json({ user: "Harwinder Singh" });
-});
+router.get("/", usersControllers.getAllUsers);
 
 router.get("/:uid", usersControllers.getUserById);
 
-router.post("/", usersControllers.createUser);
+// router.post("/", usersControllers.createUser);
 
 router.patch("/:uid", usersControllers.updateUserById);
 
-router.delete("/:uid", usersControllers.deleteUserById);
+router.delete("/:uid", usersControllers.deleteUserById); 
+
+router.post("/signup", usersControllers.createUser);
+
+router.post("/login", usersControllers.loginUserByUsernameAndPassword);
 
 module.exports = router;

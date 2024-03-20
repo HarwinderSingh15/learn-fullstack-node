@@ -10,8 +10,14 @@ const DUMMY_USERS = [
     last_name: "Singh",
     dob: "15-08-1999",
     location: "Mohali",
+    email: "harry@test.com",
+    password: "123456",
   },
 ];
+
+const getAllUsers = (req, res, next) => {
+  res.json({ message: "All users", data: DUMMY_USERS });
+};
 
 const getUserById = (req, res, next) => {
   if (req.params?.uid) {
@@ -27,7 +33,13 @@ const getUserById = (req, res, next) => {
 };
 
 const createUser = (req, res, next) => {
-  const { username, first_name, last_name, dob, location } = req.body;
+  const { username, first_name, last_name, dob, location, email, password } =
+    req.body;
+
+  if (DUMMY_USERS.find((el) => email === el.email)) {
+    next(new HttpError("Could not create user! email already exits."));
+    return;
+  }
   const createdUser = {
     uid: uuidV4(),
     first_name,
@@ -35,6 +47,8 @@ const createUser = (req, res, next) => {
     username,
     dob,
     location,
+    email,
+    password,
   };
   DUMMY_USERS.push(createdUser);
   res.status(201).json(createdUser);
@@ -63,27 +77,53 @@ const updateUserById = (req, res, next) => {
 
   DUMMY_USERS[userIdxFound] = updatedUser;
 
-  res
-    .status(200)
-    .json({ message: "user with this " + uid + " has been updated" });
+  res.status(200).json({
+    message: "user with this " + uid + " has been updated",
+    data: updatedUser,
+  });
 };
 
 const deleteUserById = (req, res, next) => {
   const { uid } = req.params;
 
   const userFound = DUMMY_USERS.find((el) => el.uid === uid);
+  const findIdx = DUMMY_USERS.findIndex((el) => el.uid === uid);
 
   if (!userFound) {
     next(new HttpError("No user with this id found!", 404));
     return;
   }
 
-  DUMMY_USERS = DUMMY_USERS.filter((el) => el.uid != userFound.uid);
+  delete DUMMY_USERS[findIdx];
 
   res.json({
     message: "User has been deleted successfully",
-    data: updatedUser,
   });
 };
 
-module.exports = { getUserById, createUser, updateUserById, deleteUserById };
+const loginUserByUsernameAndPassword = (req, res, next) => {
+  const { email, password } = req.body;
+
+  const userFound = DUMMY_USERS.find((el) => el.email == email);
+
+  if (!userFound) {
+    next(new HttpError("No user found with provided email!", 404));
+    return;
+  }
+
+  if (userFound.password == password) {
+    res.json({ message: "Login successfull", data: userFound });
+  } else {
+    next(new HttpError("Incorrect password!", 401));
+    return;
+  }
+};
+
+module.exports = {
+  getAllUsers,
+  getUserById,
+  createUser,
+  updateUserById,
+  deleteUserById,
+  loginUserByUsernameAndPassword,
+};
