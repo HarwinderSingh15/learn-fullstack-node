@@ -1,6 +1,7 @@
 const { v4: uuidV4 } = require("uuid");
 
 const HttpError = require("../models/http-error");
+const { validateSignup } = require("../helpers/validation_schema");
 
 const DUMMY_USERS = [
   {
@@ -33,8 +34,21 @@ const getUserById = (req, res, next) => {
 };
 
 const createUser = (req, res, next) => {
+
+
+  const { error, value } = validateSignup(req.body);
+  if (error) {
+    next(
+      new HttpError(
+        error.details.map((el) => el.message),
+        401
+      )
+    );
+    return;
+  }
+
   const { username, first_name, last_name, dob, location, email, password } =
-    req.body;
+    value;
 
   if (DUMMY_USERS.find((el) => email === el.email)) {
     next(new HttpError("Could not create user! email already exits."));
