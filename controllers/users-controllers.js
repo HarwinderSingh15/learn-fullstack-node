@@ -1,7 +1,11 @@
 const { v4: uuidV4 } = require("uuid");
 
+const db = require("../config/db");
 const HttpError = require("../models/http-error");
-const { validateSignup } = require("../helpers/validation_schema");
+const {
+  validateSignup,
+  validateUpdateUser,
+} = require("../helpers/validation_schema");
 
 const DUMMY_USERS = [
   {
@@ -34,43 +38,49 @@ const getUserById = (req, res, next) => {
 };
 
 const createUser = (req, res, next) => {
-
-
   const { error, value } = validateSignup(req.body);
+
   if (error) {
     next(
       new HttpError(
         error.details.map((el) => el.message),
-        401
+        422
       )
     );
     return;
   }
 
-  const { username, first_name, last_name, dob, location, email, password } =
-    value;
-
-  if (DUMMY_USERS.find((el) => email === el.email)) {
+  if (DUMMY_USERS.find((el) => value.email === el.email)) {
     next(new HttpError("Could not create user! email already exits."));
     return;
   }
   const createdUser = {
     uid: uuidV4(),
-    first_name,
-    last_name,
-    username,
-    dob,
-    location,
-    email,
-    password,
+    ...value,
   };
+
+  `INSERT INTO users (username, password, email, first_name, last_name, address, lat, lng, hobbies, dob, acceptTos, user_role, nri, nri_country) 
+VALUES 
+('bob_jones', 'securepass', 'bob.jones@example.com', 'Bob', 'Jones', '789 Oak St', 51.5074, -0.1278, 'cooking, gardening', '1978-03-10', true, 3, false, NULL);
+`;
   DUMMY_USERS.push(createdUser);
   res.status(201).json(createdUser);
 };
 
 const updateUserById = (req, res, next) => {
   const { uid } = req.params;
-  const { username, first_name, last_name, dob, location } = req.body;
+
+  const { error, value } = validateUpdateUser(req.body);
+
+  if (error) {
+    next(
+      new HttpError(
+        error.details.map((el) => el.message),
+        422
+      )
+    );
+    return;
+  }
 
   const userFound = DUMMY_USERS.find((el) => el.uid === uid);
   const userIdxFound = DUMMY_USERS.findIndex((el) => el.uid === uid);
@@ -79,10 +89,10 @@ const updateUserById = (req, res, next) => {
     next(new HttpError("No user with this id found!", 404));
     return;
   }
+  const { first_name, last_name, dob, location } = value;
 
   const updatedUser = {
-    uid: userFound.uid,
-    username: username || userFound.username,
+    ...userFound,
     first_name: first_name || userFound.first_name,
     last_name: last_name || userFound.last_name,
     dob: dob || userFound.dob,
